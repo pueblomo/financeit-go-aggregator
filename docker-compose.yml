@@ -1,0 +1,20 @@
+version: "3.3"
+
+services:
+  backend:
+    image: my-go-server-aggregator
+    ports:
+      - "3000:7080"
+    environment:
+      - DBURL=db-aggregator
+      - DBPASSWORD=example
+    depends_on:
+      - db-aggregator
+
+  db-aggregator:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: example
