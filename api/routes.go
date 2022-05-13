@@ -16,7 +16,7 @@ func InitRoutes(app *fiber.App){
 }
 
 func initAggRoutes(grp fiber.Router){
-	grp.Get("/:page/:items", func(c *fiber.Ctx) error {
+	grp.Get("/", func(c *fiber.Ctx) error {
 		return aggregates.GetAggregatesInMonths(c)
 	})
 }
