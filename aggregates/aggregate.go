@@ -18,16 +18,21 @@ type AggregateDate struct {
 	LastDay string
 }
 
-type Aggregate struct {
-	Date string
-	Categories []CategoryDto
+type AggregateByDate struct {
+	Date string `json:"date"`
+	Categories []AggregateByCategory `json:"categories"`
+}
+
+type AggregateByCategory struct {
+	Category CategoryDto `json:"category"`
+	Expenses []ExpenseDto `json:"expenses"`
 }
 
 
 func GetAggregatesInMonths(ctx *fiber.Ctx) error{
 	log.Println("Get Aggregates")
-	page := ctx.Params("page")
-	items := ctx.Params("items")
+	page := ctx.Query("page")
+	items := ctx.Query("items")
 	if page == "" || items == "" {
 		log.Println("can't get page or items from path")
 		return ctx.SendStatus(fiber.StatusInternalServerError)
@@ -42,15 +47,26 @@ func GetAggregatesInMonths(ctx *fiber.Ctx) error{
 	}
 
 	aggregateDates := getMonths(intPage, intItems)
-	result := []Aggregate{}
+	result := []AggregateByDate{}
 	for _, v := range aggregateDates {
 		categories, err := GetCategoriesForMonth(v)
 		if err != nil {
 			log.Println(err)
 			return ctx.SendStatus(fiber.StatusInternalServerError)
 		}
+
+		aggregatesByCategory := []AggregateByCategory{}
+
+		for _, cat := range categories {
+			expenses, err := GetExpensesForMonth(v,cat.Id)
+			if err != nil {
+				log.Println(err)
+				return ctx.SendStatus(fiber.StatusInternalServerError)
+			}
+			aggregatesByCategory = append(aggregatesByCategory, AggregateByCategory{cat,expenses})
+		}
 		
-		result = append(result, Aggregate{v.FirstDay, categories})
+		result = append(result, AggregateByDate{v.FirstDay, aggregatesByCategory})
 	}
 
 	return ctx.Status(fiber.StatusOK).JSON(result)

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v4"
 	"main.go/database"
 )
 
@@ -38,4 +39,30 @@ func InsertExpense (c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusCreated)
+}
+
+func GetExpensesForMonth(month AggregateDate, catId int64) ([]ExpenseDto, error) {
+	log.Printf("Get expenses for month %v for id %v\n",month, catId)
+	rows, err := database.Conn.Query(context.Background(),"SELECT id, description, date, price, categoryid FROM expense where categoryid = $1 and date >= $2 and date <= $3", catId, month.FirstDay, month.LastDay)
+	defer rows.Close()
+	if err != nil {
+		return make([]ExpenseDto, 0), err
+	}
+
+	return getExpenseFromRows(rows), nil
+}
+
+func getExpenseFromRows(rows pgx.Rows) []ExpenseDto{
+	var expenses []ExpenseDto
+	for rows.Next() {
+		var id int64
+		var description string
+		var date time.Time
+		var price int
+		var categoryid int64
+		rows.Scan(&id,&description,&date,&price,&categoryid)
+		expenses = append(expenses, ExpenseDto{id,date,description,price,categoryid})
+	}
+
+	return expenses
 }
